@@ -18,10 +18,8 @@ import {
   IconSettings,
   IconUsers,
 } from "@tabler/icons-react"
-
-import { NavDocuments } from "@/components/dashboard/nav-documents"
+import { GrAd } from "react-icons/gr";
 import { NavMain } from "@/components/dashboard/nav-main"
-import { NavSecondary } from "@/components/dashboard/nav-secondary"
 import { NavUser } from "@/components/dashboard/nav-user"
 import {
   Sidebar,
@@ -41,28 +39,28 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "#",
+      title: "Workspace",
+      url: "workspace",
       icon: IconDashboard,
     },
     {
-      title: "Lifecycle",
-      url: "#",
+      title: "Task Management",
+      url: "taskManagement",
       icon: IconListDetails,
     },
     {
-      title: "Analytics",
-      url: "#",
+      title: "Calender",
+      url: "calender",
       icon: IconChartBar,
     },
     {
-      title: "Projects",
-      url: "#",
+      title: "My Hub",
+      url: "myHub",
       icon: IconFolder,
     },
     {
-      title: "Team",
-      url: "#",
+      title: "My Team",
+      url: "myTeam",
       icon: IconUsers,
     },
   ],
@@ -114,66 +112,45 @@ const data = {
       ],
     },
   ],
-  navSecondary: [
-    {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
-    },
-  ],
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
+    <Sidebar collapsible="offcanvas" className="border-none bg-linear-to-b from-sidebar to-sidebar/95 backdrop-blur-xl" {...props}>
+      <SidebarHeader className="py-6 px-4">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
-              className="data-[slot=sidebar-menu-button]:!p-1.5"
+              size="lg"
+              className="hover:bg-transparent"
             >
-              <a href="#">
-                <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+              <a href="#" className="flex items-center gap-3">
+                <div className="flex aspect-square size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 bg-linear-to-br from-primary to-primary/80">
+                  <GrAd size={22} />
+                </div>
+                <div className="flex flex-col gap-0.5 leading-none">
+                  <span className="text-lg font-black tracking-tighter bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/80">
+                    UNIFY PM
+                  </span>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60">
+                    Enterprise
+                  </span>
+                </div>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+
+      <SidebarContent className="px-2 gap-0">
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <div className="py-1 px-4">
+          <div className="h-px bg-linear-to-r from-transparent via-border/10 to-transparent" />
+        </div>
       </SidebarContent>
-      <SidebarFooter>
+
+      <SidebarFooter className="p-4 bg-black/5 dark:bg-white/5 backdrop-blur-sm border-t border-border/10">
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>

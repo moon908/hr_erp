@@ -47,60 +47,56 @@ export function NavUser({
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="data-[state=open]:bg-black/10 dark:data-[state=open]:bg-white/10 h-14 rounded-xl transition-all hover:bg-black/5 dark:hover:bg-white/5"
             >
-              <Avatar className="h-8 w-8 rounded-lg grayscale">
+              <Avatar className="h-9 w-9 rounded-lg border-2 border-primary/20 transition-transform group-hover:scale-105">
                 <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-bold">JD</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="text-muted-foreground truncate text-xs">
+              <div className="grid flex-1 text-left text-sm leading-tight ml-2">
+                <span className="truncate font-black text-foreground/90">{user.name}</span>
+                <span className="text-muted-foreground/60 truncate text-[10px] font-bold uppercase tracking-wider">
                   {user.email}
                 </span>
               </div>
-              <IconDotsVertical className="ml-auto size-4" />
+              <IconDotsVertical className="ml-auto size-4 opacity-30" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-64 rounded-2xl shadow-2xl backdrop-blur-2xl bg-card/90 border-none p-2 mb-2"
             side={isMobile ? "bottom" : "right"}
             align="end"
-            sideOffset={4}
+            sideOffset={8}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
+              <div className="flex items-center gap-3 px-2 py-3 text-left">
+                <Avatar className="h-10 w-10 rounded-xl border-2 border-primary/20">
                   <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-xl font-bold bg-primary/20">JD</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="text-muted-foreground truncate text-xs">
+                  <span className="truncate font-black text-lg -mb-0.5">{user.name}</span>
+                  <span className="text-muted-foreground/60 truncate text-[10px] font-bold uppercase tracking-wider">
                     {user.email}
                   </span>
                 </div>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Account
+            <DropdownMenuSeparator className="bg-border/10 my-1" />
+            <DropdownMenuGroup className="gap-1 flex flex-col">
+              <DropdownMenuItem className="rounded-lg h-10 px-3 font-semibold text-xs gap-3">
+                <IconUserCircle className="size-7 opacity-70" />
+                <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconCreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <IconNotification />
-                Notifications
+              <DropdownMenuItem className="rounded-lg h-10 px-3 font-semibold text-xs gap-3">
+                <IconNotification className="size-7 opacity-70" />
+                <span>Notifications</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <IconLogout />
-              Log out
+            <DropdownMenuSeparator className="bg-border/10 my-1" />
+            <DropdownMenuItem className="rounded-lg h-10 px-3 font-semibold text-xs gap-3 text-rose-500 focus:text-rose-500 focus:bg-rose-500/10">
+              <IconLogout className="size-7" />
+              <span>Sign Out Session</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -165,53 +165,50 @@ export function ChartAreaInteractive() {
   })
 
   return (
-    <Card className="@container/card">
-      <CardHeader>
-        <CardTitle>Total Visitors</CardTitle>
-        <CardDescription>
-          <span className="hidden @[540px]/card:block">
-            Total for the last 3 months
-          </span>
-          <span className="@[540px]/card:hidden">Last 3 months</span>
-        </CardDescription>
+    <Card className="@container/card border-none shadow-2xl bg-linear-to-br from-card/80 to-card/30 backdrop-blur-xl relative overflow-hidden">
+      {/* Background glow */}
+      <div className="absolute top-0 left-0 w-64 h-64 bg-primary/5 rounded-full -ml-32 -mt-32 blur-3xl opacity-50" />
+
+      <CardHeader className="relative z-10 flex flex-row items-center justify-between pb-2">
+        <div>
+          <CardTitle className="text-2xl font-black tracking-tight bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/80">
+            Analytics Overview
+          </CardTitle>
+          <CardDescription className="font-bold text-foreground/60 uppercase tracking-tighter text-[10px]">
+            Traffic & Engagement Metrics
+          </CardDescription>
+        </div>
         <CardAction>
           <ToggleGroup
             type="single"
             value={timeRange}
             onValueChange={setTimeRange}
             variant="outline"
-            className="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
+            className="hidden *:data-[slot=toggle-group-item]:text-[10px] *:data-[slot=toggle-group-item]:font-bold *:data-[slot=toggle-group-item]:uppercase *:data-[slot=toggle-group-item]:tracking-widest @[767px]/card:flex bg-black/10 dark:bg-white/10 rounded-full p-1 border-none"
           >
-            <ToggleGroupItem value="90d">Last 3 months</ToggleGroupItem>
-            <ToggleGroupItem value="30d">Last 30 days</ToggleGroupItem>
-            <ToggleGroupItem value="7d">Last 7 days</ToggleGroupItem>
+            <ToggleGroupItem value="90d" className="rounded-full px-4 data-[state=on]:bg-background data-[state=on]:shadow-md data-[state=on]:text-foreground">3m</ToggleGroupItem>
+            <ToggleGroupItem value="30d" className="rounded-full px-4 data-[state=on]:bg-background data-[state=on]:shadow-md data-[state=on]:text-foreground">30d</ToggleGroupItem>
+            <ToggleGroupItem value="7d" className="rounded-full px-4 data-[state=on]:bg-background data-[state=on]:shadow-md data-[state=on]:text-foreground">7d</ToggleGroupItem>
           </ToggleGroup>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger
-              className="flex w-40 **:data-[slot=select-value]:block **:data-[slot=select-value]:truncate @[767px]/card:hidden"
+              className="flex w-32 border-none bg-black/10 dark:bg-white/10 rounded-full h-8 text-[10px] font-bold uppercase tracking-widest @[767px]/card:hidden"
               size="sm"
-              aria-label="Select a value"
             >
               <SelectValue placeholder="Last 3 months" />
             </SelectTrigger>
-            <SelectContent className="rounded-xl">
-              <SelectItem value="90d" className="rounded-lg">
-                Last 3 months
-              </SelectItem>
-              <SelectItem value="30d" className="rounded-lg">
-                Last 30 days
-              </SelectItem>
-              <SelectItem value="7d" className="rounded-lg">
-                Last 7 days
-              </SelectItem>
+            <SelectContent className="rounded-xl border-none shadow-2xl backdrop-blur-xl bg-card/95">
+              <SelectItem value="90d" className="text-xs font-bold uppercase tracking-wider">3 months</SelectItem>
+              <SelectItem value="30d" className="text-xs font-bold uppercase tracking-wider">30 days</SelectItem>
+              <SelectItem value="7d" className="text-xs font-bold uppercase tracking-wider">7 days</SelectItem>
             </SelectContent>
           </Select>
         </CardAction>
       </CardHeader>
-      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6 relative z-10">
         <ChartContainer
           config={chartConfig}
-          className="aspect-auto h-[210px] w-full"
+          className="aspect-auto h-[240px] w-full"
         >
           <AreaChart data={filteredData}>
             <defs>
@@ -219,19 +216,19 @@ export function ChartAreaInteractive() {
                 <stop
                   offset="5%"
                   stopColor="var(--color-desktop)"
-                  stopOpacity={1.0}
+                  stopOpacity={0.2}
                 />
                 <stop
                   offset="95%"
                   stopColor="var(--color-desktop)"
-                  stopOpacity={0.1}
+                  stopOpacity={0.05}
                 />
               </linearGradient>
               <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
                 <stop
                   offset="5%"
                   stopColor="var(--color-mobile)"
-                  stopOpacity={0.8}
+                  stopOpacity={0.2}
                 />
                 <stop
                   offset="95%"
@@ -240,13 +237,14 @@ export function ChartAreaInteractive() {
                 />
               </linearGradient>
             </defs>
-            <CartesianGrid vertical={false} />
+            <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="currentColor" opacity={0.1} />
             <XAxis
               dataKey="date"
               tickLine={false}
               axisLine={false}
-              tickMargin={8}
+              tickMargin={12}
               minTickGap={32}
+              tick={{ fill: 'currentColor', opacity: 0.7, fontSize: 10, fontWeight: 700 }}
               tickFormatter={(value) => {
                 const date = new Date(value)
                 return date.toLocaleDateString("en-US", {
@@ -256,16 +254,18 @@ export function ChartAreaInteractive() {
               }}
             />
             <ChartTooltip
-              cursor={false}
+              cursor={{ stroke: 'currentColor', strokeWidth: 1, opacity: 0.2 }}
               content={
                 <ChartTooltipContent
                   labelFormatter={(value) => {
                     return new Date(value).toLocaleDateString("en-US", {
-                      month: "short",
+                      month: "long",
                       day: "numeric",
+                      year: "numeric"
                     })
                   }}
                   indicator="dot"
+                  className="backdrop-blur-xl bg-card/95 border border-border shadow-2xl rounded-xl"
                 />
               }
             />
@@ -274,6 +274,7 @@ export function ChartAreaInteractive() {
               type="natural"
               fill="url(#fillMobile)"
               stroke="var(--color-mobile)"
+              strokeWidth={3}
               stackId="a"
             />
             <Area
@@ -281,6 +282,7 @@ export function ChartAreaInteractive() {
               type="natural"
               fill="url(#fillDesktop)"
               stroke="var(--color-desktop)"
+              strokeWidth={3}
               stackId="a"
             />
           </AreaChart>

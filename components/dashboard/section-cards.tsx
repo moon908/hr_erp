@@ -1,6 +1,7 @@
 import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
-
-import { Badge } from "@/components/ui/badge"
+import { MdOutlinePending } from "react-icons/md"
+import { AiOutlineIssuesClose } from "react-icons/ai"
+import { TiTick } from "react-icons/ti"
 import {
   Card,
   CardAction,
@@ -11,53 +12,56 @@ import {
 } from "@/components/ui/card"
 
 export function SectionCards() {
+  const cards = [
+    {
+      title: "Projects Completed",
+      value: "$1,250.00",
+      trend: "Trending up",
+      trendIcon: <TiTick />,
+      description: "Updated 5m ago",
+      color: "from-emerald-500/10"
+    },
+    {
+      title: "Projects Pending",
+      value: "1,234",
+      trend: "Down 20%",
+      trendIcon: <MdOutlinePending />,
+      description: "Last 30 days",
+      color: "from-blue-500/10"
+    },
+    {
+      title: "Number of Issues",
+      value: "45,678",
+      trend: "High retention",
+      trendIcon: <AiOutlineIssuesClose />,
+      description: "Across platforms",
+      color: "from-purple-500/10"
+    }
+  ]
+
   return (
-    <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
-      <Card className="@container/card py-3 gap-2">
-        <CardHeader className="px-4 gap-1">
-          <CardDescription className="text-xs">Total Revenue</CardDescription>
-          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">
-            $1,250.00
-          </CardTitle>
-          <CardAction>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 px-4 text-xs">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Trending up this month <IconTrendingUp className="size-3" />
+    <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+      {cards.map((card, index) => (
+        <Card key={index} className="group relative overflow-hidden border-none shadow-xl bg-linear-to-br from-card/80 to-card/30 backdrop-blur-xl py-4">
+          {/* Decorative highlight */}
+          <div className={`absolute top-0 left-0 w-24 h-24 bg-linear-to-br ${card.color} to-transparent blur-2xl -ml-12 -mt-12 transition-opacity group-hover:opacity-100 opacity-50`} />
+
+          <div className="flex items-center gap-4 px-5 relative z-10">
+            <div id="trendIcon" className="flex items-center justify-center w-12 h-12 rounded-xl bg-foreground/5 text-2xl text-primary">
+              {card.trendIcon}
+            </div>
+
+            <CardHeader id="cardHeader" className="p-0 gap-0">
+              <CardDescription className="text-[12px] font-bold uppercase tracking-widest text-muted-foreground/80 whitespace-nowrap">
+                {card.title}
+              </CardDescription>
+              <CardTitle className="text-3xl font-black tracking-tighter tabular-nums mt-1 bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/80">
+                {card.value}
+              </CardTitle>
+            </CardHeader>
           </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card py-3 gap-2">
-        <CardHeader className="px-4 gap-1">
-          <CardDescription className="text-xs">New Customers</CardDescription>
-          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">
-            1,234
-          </CardTitle>
-          <CardAction>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 px-4 text-xs">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-3" />
-          </div>
-        </CardFooter>
-      </Card>
-      <Card className="@container/card py-3 gap-2">
-        <CardHeader className="px-4 gap-1">
-          <CardDescription className="text-xs">Active Accounts</CardDescription>
-          <CardTitle className="text-xl font-semibold tabular-nums @[250px]/card:text-2xl">
-            45,678
-          </CardTitle>
-          <CardAction>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 px-4 text-xs">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Strong user retention <IconTrendingUp className="size-3" />
-          </div>
-        </CardFooter>
-      </Card>
+        </Card>
+      ))}
     </div>
   )
 }

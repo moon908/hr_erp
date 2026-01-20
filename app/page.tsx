@@ -1,9 +1,9 @@
-import { MyPieChart } from "@/components/Charts/MyPieChart"
+import Dashboard from "@/components/dashboard/Dashboard"
 
 const page = () => {
   return (
     <div>
-      <MyPieChart />
+      <Dashboard />
     </div>
   )
 }
