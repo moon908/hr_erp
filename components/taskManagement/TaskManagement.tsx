@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -30,13 +30,42 @@ import {
     CheckCircle2,
     Clock,
     AlertCircle,
-    MessageSquare,
-    Layout
+    Layout,
+    Search
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Task, INITIAL_TASKS, WORKSPACES } from '@/constants/constants';
+import { supabase } from '@/lib/supabase/client';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+
+// Types
+export type Priority = 'low' | 'medium' | 'high';
+
+export interface Task {
+    id: string;
+    title: string;
+    description: string;
+    priority: Priority;
+    dueDate: string;
+    columnId: string;
+    department: string;
+}
 
 export interface Column {
     id: string;
@@ -50,6 +79,13 @@ const DEFAULT_COLUMNS: Column[] = [
     { id: 'done', title: 'Done' },
 ];
 
+const DEPARTMENTS = [
+    "Marketing and Growth",
+    "Human Resource",
+    "Software Developers",
+    "Devops",
+    "Product Design"
+];
 
 // Components
 const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
@@ -74,7 +110,7 @@ const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
     };
 
     const priorityColors = {
-        low: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        low: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
         medium: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
         high: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
     };
@@ -90,7 +126,7 @@ const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
             <div
                 ref={setNodeRef}
                 style={style}
-                className="opacity-30 bg-slate-100 dark:bg-slate-800/50 h-[120px] rounded-xl mb-3 border-2 border-dashed border-slate-300 dark:border-slate-700"
+                className="opacity-40 bg-slate-100 dark:bg-slate-800/50 h-[120px] rounded-2xl mb-4 border-2 border-dashed border-blue-200 dark:border-blue-900/50"
             />
         );
     }
@@ -102,58 +138,43 @@ const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
             {...attributes}
             {...listeners}
             className={cn(
-                "group relative bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl mb-3 hover:shadow-xl hover:border-blue-200 dark:hover:border-blue-900/50 transition-all cursor-grab active:cursor-grabbing",
-                isOverlay && "shadow-2xl ring-2 ring-blue-500 border-transparent rotate-2 scale-105"
+                "group relative bg-white dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800/60 p-5 rounded-2xl mb-4 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:hover:shadow-[0_8px_30px_rgb(0,0,0,0.1)] hover:border-blue-400/30 dark:hover:border-blue-500/30 transition-all cursor-grab active:cursor-grabbing backdrop-blur-sm",
+                isOverlay && "shadow-2xl ring-2 ring-blue-500/50 border-transparent rotate-2 scale-105 z-50 bg-white/90 dark:bg-slate-900/90"
             )}
         >
-            <div className="flex justify-between items-start mb-3">
+            <div className="flex justify-between items-start mb-4">
                 <span className={cn(
-                    "px-2 py-0.5 rounded-full text-[10px] font-semibold flex items-center gap-1 uppercase tracking-wider",
+                    "px-2.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 uppercase tracking-wider",
                     priorityColors[task.priority]
                 )}>
                     {priorityIcons[task.priority]}
                     {task.priority}
                 </span>
-                <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
+                <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
                     <MoreVertical className="w-4 h-4" />
                 </button>
             </div>
 
-            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-1 leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <h3 className="text-[15px] font-bold text-slate-800 dark:text-slate-100 mb-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                 {task.title}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-5 leading-relaxed">
                 {task.description}
             </p>
 
             <div className="flex items-center justify-between mt-auto">
-                <div className="flex items-center gap-2">
-                    <Avatar className="w-6 h-6 border-2 border-white dark:border-slate-900">
-                        <AvatarImage src={task.assignee.image} />
-                        <AvatarFallback className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                            {task.assignee.initials}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
-                        <Calendar className="w-3 h-3" />
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 px-2.5 py-1 rounded-lg">
+                        <Calendar className="w-3.5 h-3.5" />
                         <span>{task.dueDate}</span>
                     </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
-                    {task.commentsCount > 0 && (
-                        <div className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" />
-                            {task.commentsCount}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
     );
 };
 
-const KanbanColumn = ({ column, tasks }: { column: Column; tasks: Task[] }) => {
+const KanbanColumn = ({ column, tasks, onAddTask }: { column: Column; tasks: Task[]; onAddTask: (columnId: string) => void }) => {
     const { setNodeRef } = useSortable({
         id: column.id,
         data: {
@@ -165,35 +186,44 @@ const KanbanColumn = ({ column, tasks }: { column: Column; tasks: Task[] }) => {
     return (
         <div
             ref={setNodeRef}
-            className="flex flex-col w-80 min-w-[320px] h-full bg-slate-50/50 dark:bg-slate-950/20 rounded-2xl p-4 border border-slate-200/50 dark:border-slate-800/50 transition-colors"
+            className="flex flex-col w-[300px] min-w-[300px] h-full bg-slate-50/40 dark:bg-slate-950/20 rounded-[2rem] p-5 border border-slate-200/40 dark:border-slate-800/40 transition-all hover:bg-slate-50/60 dark:hover:bg-slate-950/30"
         >
-            <div className="flex items-center justify-between mb-4 px-1 shrink-0">
-                <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                    <h2 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+            <div className="flex items-center justify-between mb-6 px-2 shrink-0">
+                <div className="flex items-center gap-3">
+                    <div className={cn(
+                        "w-2.5 h-2.5 rounded-full",
+                        column.id === 'todo' && "bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]",
+                        column.id === 'in-progress' && "bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]",
+                        column.id === 'review' && "bg-purple-500 shadow-[0_0_10px_rgba(168,85,247,0.5)]",
+                        column.id === 'done' && "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]",
+                    )} />
+                    <h2 className="text-[13px] font-black text-slate-700 dark:text-slate-300 uppercase tracking-[0.1em]">
                         {column.title}
                     </h2>
-                    <span className="bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 text-[10px] border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded-full font-bold shadow-sm">
+                    <span className="bg-white/80 dark:bg-slate-900/80 text-slate-500 dark:text-slate-400 text-[11px] border border-slate-200/50 dark:border-slate-800/50 px-2.5 py-0.5 rounded-full font-bold shadow-sm backdrop-blur-sm">
                         {tasks.length}
                     </span>
                 </div>
-                <div className="flex items-center gap-1">
-                    <button className="p-1.5 hover:bg-white dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-500 shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-700">
-                        <Plus className="w-4 h-4" />
-                    </button>
-                </div>
+                <button
+                    onClick={() => onAddTask(column.id)}
+                    className="p-2 hover:bg-white dark:hover:bg-slate-800 rounded-xl transition-all text-slate-400 hover:text-blue-500 shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-700 active:scale-90"
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto pr-2 -mr-2 scrollbar-hide py-1">
                 <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                     {tasks.length > 0 ? (
                         tasks.map(task => (
                             <TaskCard key={task.id} task={task} />
                         ))
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-slate-200 dark:border-slate-800/50 rounded-xl bg-slate-50/30 dark:bg-slate-900/10">
-                            <Layout className="w-8 h-8 text-slate-300 dark:text-slate-700 mb-2" />
-                            <p className="text-[10px] font-medium text-slate-400 dark:text-slate-600">No tasks yet</p>
+                        <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-slate-200/50 dark:border-slate-800/30 rounded-3xl bg-slate-50/30 dark:bg-slate-900/10 group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all" onClick={() => onAddTask(column.id)}>
+                            <div className="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-3 group-hover:scale-110 transition-transform">
+                                <Layout className="w-6 h-6 text-slate-300 dark:text-slate-700" />
+                            </div>
+                            <p className="text-[11px] font-bold text-slate-400 dark:text-slate-600 uppercase tracking-widest">No tasks yet</p>
                         </div>
                     )}
                 </SortableContext>
@@ -203,9 +233,21 @@ const KanbanColumn = ({ column, tasks }: { column: Column; tasks: Task[] }) => {
 };
 
 export default function TaskManagement() {
-    const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [selectedDepartment, setSelectedDepartment] = useState(DEPARTMENTS[0]);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
-    const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>(WORKSPACES[0].id);
+    const [originalColumnId, setOriginalColumnId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+
+    // New Task Form State
+    const [newTask, setNewTask] = useState({
+        title: '',
+        description: '',
+        priority: 'medium' as Priority,
+        dueDate: new Date().toISOString().split('T')[0],
+        columnId: 'todo'
+    });
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -218,15 +260,96 @@ export default function TaskManagement() {
         })
     );
 
-    const handleNewTask = () => {
-        toast.success("New task creation", {
-            description: "Opening task creation modal...",
-        });
+    const fetchTasks = async (dept: string) => {
+        setIsLoading(true);
+        console.log(`Fetching tasks for department: ${dept}`);
+        try {
+            const { data, error } = await supabase
+                .from('Task')
+                .select('*')
+                .eq('department', dept);
+
+            if (error) throw error;
+            console.log(`Fetched ${data?.length || 0} tasks`);
+            setTasks(data || []);
+        } catch (error: any) {
+            console.error('Error fetching tasks:', error.message);
+            toast.error("Failed to load tasks");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTasks(selectedDepartment);
+    }, [selectedDepartment]);
+
+    const handleCreateTask = async () => {
+        if (!newTask.title) {
+            toast.error("Please fill in the title");
+            return;
+        }
+
+        try {
+            const taskToCreate = {
+                ...newTask,
+                department: selectedDepartment,
+            };
+
+            console.log(`Creating new task in department: "${selectedDepartment}"`, taskToCreate);
+
+            const { data, error } = await supabase
+                .from('Task')
+                .insert([taskToCreate])
+                .select();
+
+            if (error) {
+                console.error("Supabase Insert Error Details:", error);
+                throw error;
+            }
+
+            if (data) {
+                console.log("Task successfully inserted into Supabase:", data[0]);
+                setTasks(prev => [...prev, data[0]]);
+                setIsCreateModalOpen(false);
+                setNewTask({
+                    title: '',
+                    description: '',
+                    priority: 'medium',
+                    dueDate: new Date().toISOString().split('T')[0],
+                    columnId: 'todo'
+                });
+                toast.success(`Task added to ${selectedDepartment}`);
+            }
+        } catch (error: any) {
+            console.error('Final Creation Error:', error.message);
+            toast.error(`Creation failed: ${error.message}`);
+        }
+    };
+
+    const updateTaskStatus = async (taskId: string, columnId: string) => {
+        try {
+            console.log(`Updating task ${taskId} status to: ${columnId}`);
+            const { data, error } = await supabase
+                .from('Task')
+                .update({ columnId })
+                .eq('id', taskId)
+                .select();
+
+            if (error) throw error;
+            if (data) console.log("Database update successful:", data);
+        } catch (error: any) {
+            console.error('Error updating task status:', error.message);
+            toast.error("Failed to update task in database");
+        }
     };
 
     function onDragStart(event: DragStartEvent) {
         if (event.active.data.current?.type === 'Task') {
-            setActiveTask(event.active.data.current.task);
+            const task = event.active.data.current.task;
+            setActiveTask(task);
+            setOriginalColumnId(task.columnId);
+            console.log("Drag Start: Original column is", task.columnId);
         }
     }
 
@@ -283,9 +406,13 @@ export default function TaskManagement() {
 
     function onDragEnd(event: DragEndEvent) {
         const { active, over } = event;
-        setActiveTask(null);
+        const currentActiveTask = activeTask;
+        const startColumn = originalColumnId;
 
-        if (!over) return;
+        setActiveTask(null);
+        setOriginalColumnId(null);
+
+        if (!over || !currentActiveTask) return;
 
         const activeId = active.id;
         const overId = over.id;
@@ -295,110 +422,94 @@ export default function TaskManagement() {
         const isOverAColumn = over.data.current?.type === 'Column';
 
         if (isActiveATask) {
-            setTasks((prev) => {
-                const activeIndex = prev.findIndex((t) => t.id === activeId);
-                let targetIndex = activeIndex;
-                let targetColumnId = prev[activeIndex].columnId;
+            let finalColumnId = currentActiveTask.columnId;
 
-                if (isOverATask) {
-                    const overIndex = prev.findIndex((t) => t.id === overId);
-                    targetIndex = overIndex;
-                    targetColumnId = prev[overIndex].columnId;
-                } else if (isOverAColumn) {
-                    targetColumnId = overId as string;
-                }
+            // We need to find what the final columnId is after all drag overs
+            // Since our state 'tasks' is updated during dragOver, we can find it there
+            const taskInState = tasks.find(t => t.id === activeId);
+            if (taskInState) {
+                finalColumnId = taskInState.columnId;
+            }
 
-                const newTasks = [...prev];
-                const oldColumnId = prev[activeIndex].columnId;
-                newTasks[activeIndex] = {
-                    ...newTasks[activeIndex],
-                    columnId: targetColumnId
-                };
-
-                if (oldColumnId !== targetColumnId) {
-                    toast.success(`Task moved to ${DEFAULT_COLUMNS.find(c => c.id === targetColumnId)?.title}`);
-                }
-
-                return arrayMove(newTasks, activeIndex, targetIndex);
-            });
+            if (startColumn !== finalColumnId) {
+                console.log(`Column changed from ${startColumn} to ${finalColumnId}. Triggering update.`);
+                toast.success(`Task moved to ${DEFAULT_COLUMNS.find(c => c.id === finalColumnId)?.title}`);
+                updateTaskStatus(activeId as string, finalColumnId);
+            } else {
+                console.log("Column did not change. No update needed.");
+            }
         }
     }
 
-    const filteredTasks = tasks.filter(t => t.workspaceId === selectedWorkspaceId);
-
     return (
         <div className="p-8 h-screen flex flex-col bg-white dark:bg-[#020617] overflow-hidden">
-            <div className="flex items-center justify-between mb-6 shrink-0">
-                <div className="flex items-center gap-5">
-                    <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20 rotate-3">
-                        <Layout className="w-7 h-7" />
+            {/* Header section with glass effect */}
+            <div className="flex items-center justify-between mb-8 shrink-0 relative">
+                <div className="flex items-center gap-6">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 dark:opacity-40 animate-pulse" />
+                        <div className="relative p-4 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-[1.5rem] text-white shadow-2xl shadow-blue-500/30 -rotate-3 hover:rotate-0 transition-all duration-500 transform-gpu cursor-pointer">
+                            <Layout className="w-8 h-8" />
+                        </div>
                     </div>
                     <div>
-                        <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-                            Task Management
-                        </h1>
-                        <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-2 mb-1">
+                            <h1 className="text-4xl font-[900] text-slate-900 dark:text-white tracking-tight">
+                                Task Center
+                            </h1>
+                            <div className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black rounded-lg uppercase tracking-tighter border border-blue-100 dark:border-blue-800">
+                                Enterprise
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-4">
                             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-                                Drag and drop to organize your workflow
+                                Manage and track your industrial workflow
                             </p>
                             <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                            <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 text-sm font-bold">
+                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-sm font-bold">
                                 <CheckCircle2 className="w-4 h-4" />
-                                <span>{filteredTasks.filter(t => t.columnId === 'done').length} Completed</span>
+                                <span>{tasks.filter(t => t.columnId === 'done').length} Completed</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-6">
-                    <div className="hidden lg:flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-1.5 pr-4 rounded-2xl border border-slate-100 dark:border-slate-800">
-                        <div className="flex -space-x-2">
-                            {INITIAL_TASKS.slice(0, 4).map((t, i) => (
-                                <Avatar key={i} className="w-8 h-8 ring-4 ring-white dark:ring-slate-900 border border-slate-100 dark:border-slate-800">
-                                    <AvatarFallback className="bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 text-[10px] font-bold">
-                                        {t.assignee.initials}
-                                    </AvatarFallback>
-                                </Avatar>
-                            ))}
-                        </div>
-                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">+12 more</span>
-                    </div>
-                    <button
-                        onClick={handleNewTask}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/30 active:scale-95 group"
-                    >
-                        <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-                        Add Task
-                    </button>
-                </div>
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="flex items-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-black text-sm transition-all shadow-xl shadow-blue-500/20 active:scale-95 group relative overflow-hidden"
+                >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+                    <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                    Create Task
+                </button>
             </div>
 
-            {/* Workspace Selection Bar */}
-            <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide shrink-0">
-                {WORKSPACES.map((workspace) => (
+            {/* Department Selection Bar - Premium Tabs */}
+            <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 scrollbar-hide shrink-0 px-2">
+                {DEPARTMENTS.map((dept) => (
                     <button
-                        key={workspace.id}
-                        onClick={() => setSelectedWorkspaceId(workspace.id)}
+                        key={dept}
+                        onClick={() => setSelectedDepartment(dept)}
                         className={cn(
-                            "px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap border-2",
-                            selectedWorkspaceId === workspace.id
-                                ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-500/20 active:scale-95"
-                                : "bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900/50 hover:text-blue-600 dark:hover:text-blue-400"
+                            "group relative px-6 py-3 rounded-2xl text-[13px] font-black transition-all whitespace-nowrap overflow-hidden transform-gpu",
+                            selectedDepartment === dept
+                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_rgba(255,255,255,0.05)] scale-105"
+                                : "bg-white dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800/60 hover:border-slate-400 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:-translate-y-1"
                         )}
                     >
-                        {workspace.name}
-                        <span className={cn(
-                            "ml-2 px-1.5 py-0.5 rounded-md text-[10px]",
-                            selectedWorkspaceId === workspace.id
-                                ? "bg-blue-500 text-white"
-                                : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-                        )}>
-                            {tasks.filter(t => t.workspaceId === workspace.id).length}
+                        <span className="relative z-10 flex items-center gap-2">
+                            {dept}
+                            {selectedDepartment === dept && (
+                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-[9px] font-bold">
+                                    {tasks.length}
+                                </span>
+                            )}
                         </span>
                     </button>
                 ))}
             </div>
 
+            {/* Kanban Board with Drag and Drop */}
             <div className="flex-1 min-h-0">
                 <DndContext
                     sensors={sensors}
@@ -407,12 +518,16 @@ export default function TaskManagement() {
                     onDragOver={onDragOver}
                     onDragEnd={onDragEnd}
                 >
-                    <div className="flex gap-8 h-full overflow-x-auto pb-8 scrollbar-hide select-none">
+                    <div className="flex gap-8 h-full overflow-x-auto pb-10 scrollbar-hide select-none px-2">
                         {DEFAULT_COLUMNS.map((column) => (
                             <KanbanColumn
                                 key={column.id}
                                 column={column}
-                                tasks={filteredTasks.filter((t) => t.columnId === column.id)}
+                                tasks={tasks.filter((t) => t.columnId === column.id)}
+                                onAddTask={(columnId) => {
+                                    setNewTask(prev => ({ ...prev, columnId }));
+                                    setIsCreateModalOpen(true);
+                                }}
                             />
                         ))}
                     </div>
@@ -422,7 +537,7 @@ export default function TaskManagement() {
                             sideEffects: defaultDropAnimationSideEffects({
                                 styles: {
                                     active: {
-                                        opacity: '0.4',
+                                        opacity: '0.5',
                                     },
                                 },
                             }),
@@ -434,6 +549,120 @@ export default function TaskManagement() {
                     </DragOverlay>
                 </DndContext>
             </div>
+
+            {/* Premium Create Task Modal */}
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogContent className="sm:max-w-[500px] bg-white/95 dark:bg-slate-950/95 border-slate-200 dark:border-slate-800 backdrop-blur-xl rounded-[2.5rem] shadow-3xl p-8">
+                    <DialogHeader className="mb-6">
+                        <DialogTitle className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-4">
+                            <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-xl shadow-blue-500/20">
+                                <Plus className="w-6 h-6" />
+                            </div>
+                            Create New Task
+                        </DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-8 py-4">
+                        <div className="grid gap-3">
+                            <Label htmlFor="title" className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest pl-1">Task Title</Label>
+                            <Input
+                                id="title"
+                                placeholder="What needs to be done?"
+                                value={newTask.title}
+                                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                                className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl h-14 px-5 text-lg font-bold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all border-2 text-slate-900 dark:text-white"
+                            />
+                        </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="description" className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest pl-1">Description</Label>
+                            <Textarea
+                                id="description"
+                                placeholder="Add more details about this task..."
+                                value={newTask.description}
+                                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-[1.5rem] min-h-[140px] px-5 py-4 text-base font-medium placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 transition-all border-2 resize-none text-slate-900 dark:text-white"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="grid gap-3">
+                                <Label htmlFor="priority" className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest pl-1">Priority</Label>
+                                <Select
+                                    value={newTask.priority}
+                                    onValueChange={(value) => setNewTask({ ...newTask, priority: value as Priority })}
+                                >
+                                    <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl h-12 px-5 font-bold border-2 text-slate-900 dark:text-white">
+                                        <SelectValue placeholder="Select priority" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-2xl border-2">
+                                        <SelectItem value="low" className="font-bold">Low Priority</SelectItem>
+                                        <SelectItem value="medium" className="font-bold">Medium Priority</SelectItem>
+                                        <SelectItem value="high" className="font-bold text-rose-500">High Priority</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-3">
+                                <Label htmlFor="dueDate" className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest pl-1">Due Date</Label>
+                                <Input
+                                    id="dueDate"
+                                    type="date"
+                                    value={newTask.dueDate}
+                                    onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
+                                    className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl h-12 px-5 font-bold border-2 text-slate-900 dark:text-white"
+                                />
+                            </div>
+                        </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="column" className="text-sm font-black text-slate-700 dark:text-slate-300 uppercase tracking-widest pl-1">Initial Status</Label>
+                            <Select
+                                value={newTask.columnId}
+                                onValueChange={(value) => setNewTask({ ...newTask, columnId: value })}
+                            >
+                                <SelectTrigger className="bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 rounded-2xl h-12 px-5 font-bold border-2 text-slate-900 dark:text-white">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-2xl border-2">
+                                    {DEFAULT_COLUMNS.map(col => (
+                                        <SelectItem key={col.id} value={col.id} className="font-bold">{col.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <DialogFooter className="mt-10 sm:justify-between items-center bg-slate-50 dark:bg-slate-900/50 p-6 -mx-8 -mb-8 rounded-b-[2.5rem] border-t border-slate-200/50 dark:border-slate-800/50">
+                        <div className="hidden sm:flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            <Clock className="w-3.5 h-3.5" />
+                            Auto-saving draft
+                        </div>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setIsCreateModalOpen(false)}
+                                className="px-8 py-3 text-sm font-black text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all uppercase tracking-widest"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleCreateTask}
+                                className="bg-blue-600 text-white px-10 py-3 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20 active:scale-95 uppercase tracking-widest"
+                            >
+                                Create Task
+                            </button>
+                        </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <style jsx global>{`
+                @keyframes shimmer {
+                    0% { transform: translateX(-100%); }
+                    100% { transform: translateX(100%); }
+                }
+                .scrollbar-hide::-webkit-scrollbar {
+                    display: none;
+                }
+                .scrollbar-hide {
+                    -ms-overflow-style: none;
+                    scrollbar-width: none;
+                }
+            `}</style>
         </div>
     );
 }

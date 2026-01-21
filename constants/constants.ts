@@ -14,13 +14,7 @@ export interface Task {
     title: string;
     description: string;
     priority: Priority;
-    assignee: {
-        name: string;
-        image?: string;
-        initials: string;
-    };
     dueDate: string;
-    commentsCount: number;
 }
 
 export interface CalendarEvent {
@@ -49,9 +43,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Design System Update',
         description: 'Update the primary color palette and component tokens.',
         priority: 'high',
-        assignee: { name: 'Alex Doe', initials: 'AD' },
         dueDate: '2024-05-20',
-        commentsCount: 3,
     },
     {
         id: '2',
@@ -60,9 +52,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Auth Integration',
         description: 'Implement Clerk authentication for the dashboard.',
         priority: 'medium',
-        assignee: { name: 'Sam Smith', initials: 'SS' },
         dueDate: '2024-05-22',
-        commentsCount: 1,
     },
     // Marketing
     {
@@ -72,9 +62,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Landing Page Revamp',
         description: 'Create a more engaging hero section with animations.',
         priority: 'high',
-        assignee: { name: 'Jane Wilson', initials: 'JW' },
         dueDate: '2024-05-18',
-        commentsCount: 8,
     },
     {
         id: '4',
@@ -83,9 +71,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Bug: Sidebar Layout',
         description: 'Fix the overflow issue on mobile devices.',
         priority: 'low',
-        assignee: { name: 'Bob Brown', initials: 'BB' },
         dueDate: '2024-05-15',
-        commentsCount: 2,
     },
     {
         id: '5',
@@ -94,9 +80,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Project Setup',
         description: 'Initialize Next.js project with Tailwind CSS.',
         priority: 'medium',
-        assignee: { name: 'Jane Wilson', initials: 'JW' },
         dueDate: '2024-05-10',
-        commentsCount: 0,
     },
     // Design
     {
@@ -106,9 +90,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Logo Redesign',
         description: 'Explore new concepts for the company logo.',
         priority: 'high',
-        assignee: { name: 'Aditi Sharma', initials: 'AS' },
         dueDate: '2024-06-01',
-        commentsCount: 5,
     },
     {
         id: '7',
@@ -117,9 +99,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Mobile App Mockups',
         description: 'Finalize the UI mockups for the new mobile companion app.',
         priority: 'medium',
-        assignee: { name: 'Aditi Sharma', initials: 'AS' },
         dueDate: '2024-06-05',
-        commentsCount: 2,
     },
     // Product
     {
@@ -129,9 +109,7 @@ export const INITIAL_TASKS: Task[] = [
         title: 'Roadmap Planning Q3',
         description: 'Define key milestones and features for the next quarter.',
         priority: 'high',
-        assignee: { name: 'Raj Patel', initials: 'RP' },
         dueDate: '2024-06-15',
-        commentsCount: 10,
     }
 ];
 
