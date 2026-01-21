@@ -30,6 +30,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { NavSecondary } from "./nav-secondary";
+import { supabase } from "@/lib/supabase/client"
+
 
 const data = {
   user: {
@@ -115,6 +118,33 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [workspaces, setWorkspaces] = React.useState<{ title: string; url: string; icon: any }[]>([])
+
+  React.useEffect(() => {
+    async function fetchWorkspaces() {
+      try {
+        const { data, error } = await supabase
+          .from('Workspace')
+          .select('project')
+
+        if (error) throw error
+
+        if (data) {
+          const workspaceItems = data.map((ws: any) => ({
+            title: ws.project,
+            url: "workspace",
+            icon: IconInnerShadowTop,
+          }))
+          setWorkspaces(workspaceItems)
+        }
+      } catch (error) {
+        console.error('Error fetching workspaces for sidebar:', error)
+      }
+    }
+
+    fetchWorkspaces()
+  }, [])
+
   return (
     <Sidebar collapsible="offcanvas" className="border-none bg-linear-to-b from-sidebar to-sidebar/95 backdrop-blur-xl" {...props}>
       <SidebarHeader className="py-6 px-4">
@@ -147,6 +177,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavMain items={data.navMain} />
         <div className="py-1 px-4">
           <div className="h-px bg-linear-to-r from-transparent via-border/10 to-transparent" />
+        </div>
+        <div>
+          <h1 className="text-lg font-bold tracking-tighter bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/80">My Workspaces</h1>
+          <NavSecondary items={workspaces} />
         </div>
       </SidebarContent>
 

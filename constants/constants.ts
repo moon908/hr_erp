@@ -193,85 +193,70 @@ export interface TeamMember {
     image?: string;
 }
 
-export const TEAM_MEMBERS: TeamMember[] = [
+export interface NotificationItem {
+    id: string;
+    type: 'mention' | 'assignment' | 'deadline' | 'system';
+    sender: {
+        name: string;
+        initials: string;
+        image?: string;
+    };
+    title: string;
+    content: string;
+    timestamp: string;
+    isRead: boolean;
+    workspace?: string;
+}
+
+export const INITIAL_NOTIFICATIONS: NotificationItem[] = [
     {
         id: '1',
-        name: 'Alex Doe',
-        role: 'Senior Frontend Developer',
-        email: 'alex.doe@example.com',
-        department: 'Engineering',
-        initials: 'AD'
+        type: 'mention',
+        sender: { name: 'Alex Doe', initials: 'AD', image: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=200&auto=format&fit=crop' },
+        title: 'Mentioned you in Design System',
+        content: 'Hey @Siddharth, can you take a look at the new color palette updates? I think we need a warmer indigo.',
+        timestamp: '2 mins ago',
+        isRead: false,
+        workspace: 'Engineering'
     },
     {
         id: '2',
-        name: 'Jane Wilson',
-        role: 'Marketing Lead',
-        email: 'jane.wilson@example.com',
-        department: 'Marketing',
-        initials: 'JW'
+        type: 'assignment',
+        sender: { name: 'Jane Wilson', initials: 'JW' },
+        title: 'Assigned a new task',
+        content: 'You have been assigned to "Landing Page Revamp - Hero Section". Priority: High.',
+        timestamp: '1 hour ago',
+        isRead: false,
+        workspace: 'Marketing'
     },
     {
         id: '3',
-        name: 'Sam Smith',
-        role: 'Backend Engineer',
-        email: 'sam.smith@example.com',
-        department: 'Engineering',
-        initials: 'SS'
+        type: 'deadline',
+        sender: { name: 'System', initials: 'SY' },
+        title: 'Deadline Approaching',
+        content: 'The milestone "Phase 1 Beta" is due in 24 hours. 3 tasks still pending.',
+        timestamp: '3 hours ago',
+        isRead: true,
+        workspace: 'Product'
     },
     {
         id: '4',
-        name: 'Aditi Sharma',
-        role: 'UI/UX Designer',
-        email: 'aditi.sharma@example.com',
-        department: 'Design',
-        initials: 'AS'
+        type: 'mention',
+        sender: { name: 'Sam Smith', initials: 'SS', image: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop' },
+        title: 'Replied to your comment',
+        content: '"The animations look great! Should we use Framer Motion for the entire transition?"',
+        timestamp: '5 hours ago',
+        isRead: true,
+        workspace: 'Engineering'
     },
     {
         id: '5',
-        name: 'Raj Patel',
-        role: 'Product Manager',
-        email: 'raj.patel@example.com',
-        department: 'Product',
-        initials: 'RP'
-    },
-    {
-        id: '6',
-        name: 'Bob Brown',
-        role: 'QA Engineer',
-        email: 'bob.brown@example.com',
-        department: 'Engineering',
-        initials: 'BB'
-    },
-    {
-        id: '7',
-        name: 'John Doe',
-        role: 'Senior Frontend Developer',
-        email: 'john.doe@example.com',
-        department: 'Product',
-        initials: 'JD'
-    },
-    {
-        id: '8',
-        name: "Deepak Patel",
-        role: "Marketing Manager",
-        email: "deepak.patel@example.com",
-        department: "Marketing",
-        initials: "DP",
-    },
-    {
-        id: '9',
-        name: "Siddharth Chaudhary",
-        role: "Senior Product Designer",
-        email: "siddharth.chaudhary@example.com",
-        department: "Product",
-        initials: "SC",
-    },
-    {
-        id: '10',
-        name: "Rajesh Kumar",
-        role: "Junior Designer",
-        email: "rajesh.kumar@example.com",
-        department: "Design",
-        initials: "RK",
+        type: 'system',
+        sender: { name: 'System', initials: 'SY' },
+        title: 'Project Setup Complete',
+        content: 'The workspace "Internal Tools" has been successfully initialized and repo connected.',
+        timestamp: 'Yesterday',
+        isRead: true,
+        workspace: 'Infrastructure'
     }
 ];

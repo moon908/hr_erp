@@ -28,6 +28,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
 
 export function NavUser({
   user,
@@ -39,7 +40,7 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-
+  const router = useRouter()
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -84,11 +85,11 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-border/10 my-1" />
             <DropdownMenuGroup className="gap-1 flex flex-col">
-              <DropdownMenuItem className="rounded-lg h-10 px-3 font-semibold text-xs gap-3">
+              <DropdownMenuItem onClick={() => router.push("/profile")} className="rounded-lg h-10 px-3 font-semibold text-xs gap-3">
                 <IconUserCircle className="size-7 opacity-70" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem className="rounded-lg h-10 px-3 font-semibold text-xs gap-3">
+              <DropdownMenuItem onClick={() => router.push("/notification")} className="rounded-lg h-10 px-3 font-semibold text-xs gap-3">
                 <IconNotification className="size-7 opacity-70" />
                 <span>Notifications</span>
               </DropdownMenuItem>

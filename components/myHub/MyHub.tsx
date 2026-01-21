@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { WORKSPACES, TEAM_MEMBERS } from '@/constants/constants';
+import { WORKSPACES } from '@/constants/constants';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,14 @@ const CHAT_ROOMS: ChatRoom[] = [
     { id: 'mkt-social', name: 'social-media', workspaceId: 'marketing', description: 'Scheduling and content review', membersCount: 8 },
     { id: 'design-sync', name: 'design-sync', workspaceId: 'design', description: 'Weekly UI/UX review', membersCount: 5 },
     { id: 'prod-roadmap', name: 'roadmap-q3', workspaceId: 'product', description: 'Planning the next big things', membersCount: 10 }
+];
+
+const MOCK_MEMBERS = [
+    { id: '1', name: 'Sarah Chen', initials: 'SC', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop' },
+    { id: '2', name: 'Marcus Rodriguez', initials: 'MR', image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=200&auto=format&fit=crop' },
+    { id: '3', name: 'Emily Watson', initials: 'EW' },
+    { id: '8', name: 'James Wilson', initials: 'JW' },
+    { id: 'currentUser', name: 'Me', initials: 'ME' }
 ];
 
 const MyHub = () => {
@@ -138,7 +146,7 @@ const MyHub = () => {
                 >
                     <AnimatePresence mode="popLayout">
                         {currentMessages.map((msg, idx) => {
-                            const sender = TEAM_MEMBERS.find(m => m.id === msg.senderId);
+                            const sender = MOCK_MEMBERS.find(m => m.id === msg.senderId);
                             const isMe = msg.senderId === 'currentUser';
 
                             return (

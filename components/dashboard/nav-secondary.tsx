@@ -29,11 +29,11 @@ export function NavSecondary({
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 asChild
-                className="h-8 group/secondary transition-colors"
+                className="h-10 group/secondary transition-colors"
               >
                 <a href={item.url} className="flex items-center gap-3">
-                  <item.icon className="size-4 opacity-40 group-hover/secondary:opacity-100 transition-opacity" />
-                  <span className="text-xs font-semibold text-muted-foreground/70 group-hover/secondary:text-foreground transition-colors">{item.title}</span>
+                  <item.icon className="size-5 opacity-40 group-hover/secondary:opacity-100 transition-opacity" />
+                  <span className="text-sm font-bold text-muted-foreground/70 group-hover/secondary:text-foreground transition-colors">{item.title}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
