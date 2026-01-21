@@ -126,14 +126,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       try {
         const { data, error } = await supabase
           .from('Workspace')
-          .select('project')
+          .select('id, project')
 
         if (error) throw error
 
         if (data) {
           const workspaceItems = data.map((ws: any) => ({
             title: ws.project,
-            url: "workspace",
+            url: `/taskManagement?workspaceId=${ws.id}`,
             icon: IconInnerShadowTop,
           }))
           setWorkspaces(workspaceItems)

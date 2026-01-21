@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { type Icon } from "@tabler/icons-react"
+import Link from "next/link"
 
 import {
   SidebarGroup,
@@ -31,10 +32,10 @@ export function NavSecondary({
                 asChild
                 className="h-10 group/secondary transition-colors"
               >
-                <a href={item.url} className="flex items-center gap-3">
+                <Link href={item.url} className="flex items-center gap-3">
                   <item.icon className="size-5 opacity-40 group-hover/secondary:opacity-100 transition-opacity" />
                   <span className="text-sm font-bold text-muted-foreground/70 group-hover/secondary:text-foreground transition-colors">{item.title}</span>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}

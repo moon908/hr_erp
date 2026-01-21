@@ -23,8 +23,10 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
 import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const MyTeam = () => {
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
     const [members, setMembers] = useState<TeamMember[]>([]);
@@ -36,15 +38,15 @@ const MyTeam = () => {
                 setIsLoading(true);
                 const { data, error } = await supabase
                     .from('User')
-                    .select('image, name, role, department');
+                    .select('id, image, name, role, department');
 
                 if (error) throw error;
 
                 console.log('Supabase Data:', data); // Debug log
 
                 if (data && data.length > 0) {
-                    const supabaseMembers = data.map((u, index) => ({
-                        id: `sb-${index}`,
+                    const supabaseMembers = data.map((u) => ({
+                        id: u.id,
                         name: u.name || 'Unknown User',
                         role: u.role || 'Team Member',
                         email: `${(u.name || 'user').toLowerCase().replace(/\s+/g, '.')}@example.com`,
@@ -254,10 +256,7 @@ const MyTeam = () => {
                                             variant="outline"
                                             size="sm"
                                             className="flex-1 rounded-xl h-10 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                                            onClick={() => {
-                                                navigator.clipboard.writeText(member.email);
-                                                toast.success("Email copied to clipboard");
-                                            }}
+                                            onClick={() => router.push(`/profile?userId=${member.id}`)}
                                         >
                                             <UserIcon className="w-4 h-4 mr-2" />
                                             View Profile

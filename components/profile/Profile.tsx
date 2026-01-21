@@ -1,5 +1,5 @@
 "use client"
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
     Mail,
@@ -16,35 +16,118 @@ import {
     Star,
     ExternalLink,
     ShieldCheck,
-    Link
+    Link as LinkIcon
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSearchParams } from 'next/navigation'
+import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+
+interface UserProfile {
+    id: string;
+    name: string;
+    role: string;
+    email: string;
+    phone: string;
+    location: string;
+    department: string;
+    joinDate: string;
+    bio: string;
+    skills: string[];
+    experience: string;
+    image?: string;
+    socials: {
+        github?: string;
+        linkedin?: string;
+        xcom?: string;
+    }
+}
 
 const Profile = () => {
-    const user = {
-        name: "Siddharth Chaudhary",
-        role: "Senior Product Designer",
-        email: "siddharth.chaudhary@example.com",
-        phone: "+91 98765 43210",
-        location: "New Delhi, India",
-        department: "Product & Design",
-        joinDate: "January 2023",
-        bio: "Passionate about creating user-centric designs and building seamless digital experiences. Expertise in UI/UX design, brand identity, and design systems. Currently leading the design team at HR ERP.",
-        skills: ["UI/UX Design", "Figma", "React", "Design Systems", "Prototyping", "User Research", "Adobe Suite", "Tailwind CSS"],
-        stats: [
-            { label: "Projects Completed", value: "5", icon: <Briefcase className="w-4 h-4" /> },
-            { label: "Active Task", value: "12", icon: <Star className="w-4 h-4 text-yellow-500" /> },
-            { label: "Experience", value: "5yr+", icon: <Award className="w-4 h-4 text-blue-500" /> }
-        ],
-        socials: {
-            github: "github.com/siddharth",
-            linkedin: "linkedin.com/in/siddharth",
-            twitter: "twitter.com/siddharth"
-        }
+    const searchParams = useSearchParams();
+    const userId = searchParams.get('userId');
+    const [user, setUser] = useState<UserProfile | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUserProfile = async () => {
+            if (!userId) {
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('User')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
+
+                if (error) throw error;
+
+                if (data) {
+                    setUser({
+                        id: data.id,
+                        name: data.name || "Unknown User",
+                        role: data.role || "Team Member",
+                        email: data.email || "N/A",
+                        phone: data.phone || "Not provided",
+                        location: data.location || "Remote",
+                        department: data.department || "General",
+                        joinDate: data.created_at ? new Date(data.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Recently",
+                        bio: data.bio || "No bio provided yet.",
+                        skills: Array.isArray(data.skills) ? data.skills : [],
+                        experience: data.experience || "0 years",
+                        image: data.image,
+                        socials: {
+                            github: data.github,
+                            linkedin: data.linkedin,
+                            xcom: data.xcom
+                        }
+                    });
+                }
+            } catch (error: any) {
+                console.error('Error fetching profile:', error.message);
+                toast.error("Failed to load user profile");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchUserProfile();
+    }, [userId]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50/50">
+                <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-zinc-500 font-bold animate-pulse">Loading amazing profile...</p>
+            </div>
+        );
     }
+
+    if (!user) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-50/50 text-center p-4">
+                <div className="p-6 bg-white rounded-3xl shadow-xl border border-zinc-200">
+                    <ShieldCheck className="w-16 h-16 text-zinc-300 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-zinc-900 mb-2">User Not Found</h2>
+                    <p className="text-zinc-500 max-w-xs mx-auto">We couldn't find the profile you're looking for. It might have been moved or deleted.</p>
+                </div>
+            </div>
+        );
+    }
+
+    const stats = [
+        { label: "Experience", value: user.experience, icon: <Award className="w-4 h-4 text-blue-500" /> },
+        { label: "Skills", value: user.skills.length, icon: <Star className="w-4 h-4 text-yellow-500" /> },
+        { label: "Department", value: user.department, icon: <Globe className="w-4 h-4 text-indigo-500" /> }
+    ];
 
     return (
         <div className="min-h-screen bg-zinc-50/50 text-zinc-900 p-4 md:p-8 selection:bg-indigo-500/30">
@@ -70,7 +153,7 @@ const Profile = () => {
                                 className="relative group"
                             >
                                 <Avatar className="w-40 h-40 md:w-48 md:h-48 border-4 border-white rounded-3xl shadow-xl">
-                                    <AvatarImage src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=800&auto=format&fit=crop" alt={user.name} />
+                                    <AvatarImage src={user.image} alt={user.name} />
                                     <AvatarFallback className="text-4xl bg-zinc-100 text-zinc-900 font-bold">
                                         {user.name.split(' ').map(n => n[0]).join('')}
                                     </AvatarFallback>
@@ -108,7 +191,7 @@ const Profile = () => {
 
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {user.stats.map((stat, idx) => (
+                    {stats.map((stat, idx) => (
                         <motion.div
                             key={idx}
                             initial={{ opacity: 0, y: 20 }}
@@ -152,15 +235,19 @@ const Profile = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="flex flex-wrap gap-2">
-                                    {user.skills.map((skill, idx) => (
-                                        <Badge
-                                            key={idx}
-                                            variant="secondary"
-                                            className="bg-zinc-100 hover:bg-indigo-50 text-zinc-700 hover:text-indigo-600 border-transparent hover:border-indigo-100 px-4 py-1.5 rounded-lg transition-all cursor-default"
-                                        >
-                                            {skill}
-                                        </Badge>
-                                    ))}
+                                    {user.skills.length > 0 ? (
+                                        user.skills.map((skill, idx) => (
+                                            <Badge
+                                                key={idx}
+                                                variant="secondary"
+                                                className="bg-zinc-100 hover:bg-indigo-50 text-zinc-700 hover:text-indigo-600 border-transparent hover:border-indigo-100 px-4 py-1.5 rounded-lg transition-all cursor-default"
+                                            >
+                                                {skill}
+                                            </Badge>
+                                        ))
+                                    ) : (
+                                        <p className="text-zinc-400 italic text-sm">No skills added yet.</p>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
@@ -199,15 +286,30 @@ const Profile = () => {
                                 <CardTitle className="text-xl font-bold text-zinc-900">Social Presence</CardTitle>
                             </CardHeader>
                             <CardContent className="grid grid-cols-3 gap-3 text-zinc-400">
-                                {[
-                                    { icon: Github, label: "GitHub" },
-                                    { icon: Linkedin, label: "LinkedIn" },
-                                    { icon: Twitter, label: "Twitter" },
-                                ].map((social, idx) => (
-                                    <Button key={idx} variant="outline" className="h-12 border-zinc-200 hover:bg-zinc-50 hover:text-indigo-600 transition-all">
-                                        <social.icon className="w-5 h-5" />
-                                    </Button>
-                                ))}
+                                <Button
+                                    variant="outline"
+                                    className="h-12 border-zinc-200 hover:bg-zinc-50 hover:text-indigo-600 transition-all cursor-pointer"
+                                    onClick={() => user.socials.github && window.open(`https://${user.socials.github.replace('https://', '')}`, '_blank')}
+                                    disabled={!user.socials.github}
+                                >
+                                    <Github className={cn("w-5 h-5", !user.socials.github && "opacity-20")} />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-12 border-zinc-200 hover:bg-zinc-50 hover:text-indigo-600 transition-all cursor-pointer"
+                                    onClick={() => user.socials.linkedin && window.open(`https://${user.socials.linkedin.replace('https://', '')}`, '_blank')}
+                                    disabled={!user.socials.linkedin}
+                                >
+                                    <Linkedin className={cn("w-5 h-5", !user.socials.linkedin && "opacity-20")} />
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-12 border-zinc-200 hover:bg-zinc-50 hover:text-indigo-600 transition-all cursor-pointer"
+                                    onClick={() => user.socials.xcom && window.open(`https://${user.socials.xcom.replace('https://', '')}`, '_blank')}
+                                    disabled={!user.socials.xcom}
+                                >
+                                    <Twitter className={cn("w-5 h-5", !user.socials.xcom && "opacity-20")} />
+                                </Button>
                             </CardContent>
                         </Card>
                     </div>
