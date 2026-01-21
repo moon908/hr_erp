@@ -52,11 +52,6 @@ const data = {
       icon: IconListDetails,
     },
     {
-      title: "Calender",
-      url: "calender",
-      icon: IconChartBar,
-    },
-    {
       title: "My Hub",
       url: "myHub",
       icon: IconFolder,
@@ -65,6 +60,12 @@ const data = {
       title: "My Team",
       url: "myTeam",
       icon: IconUsers,
+    },
+
+    {
+      title: "Calender",
+      url: "calender",
+      icon: IconChartBar,
     },
   ],
   navClouds: [

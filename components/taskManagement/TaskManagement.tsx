@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
     DndContext,
     DragOverlay,
@@ -23,7 +23,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
-    MoreVertical,
     Plus,
     Calendar,
     Flag,
@@ -31,7 +30,8 @@ import {
     Clock,
     AlertCircle,
     Layout,
-    Search
+    Search,
+    Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from "sonner";
@@ -53,9 +53,17 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useSearchParams } from 'next/navigation';
 
 // Types
 export type Priority = 'low' | 'medium' | 'high';
+
+export interface Workspace {
+    id: string | number;
+    project: string;
+    color: string;
+    iconColor: string;
+}
 
 export interface Task {
     id: string;
@@ -64,7 +72,7 @@ export interface Task {
     priority: Priority;
     dueDate: string;
     columnId: string;
-    department: string;
+    workspaceId: string | number;
 }
 
 export interface Column {
@@ -79,16 +87,10 @@ const DEFAULT_COLUMNS: Column[] = [
     { id: 'done', title: 'Done' },
 ];
 
-const DEPARTMENTS = [
-    "Marketing and Growth",
-    "Human Resource",
-    "Software Developers",
-    "Devops",
-    "Product Design"
-];
+// DEPARTMENTS removed in favor of dynamic workspaces
 
 // Components
-const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
+const TaskCard = ({ task, isOverlay, onDelete }: { task: Task; isOverlay?: boolean; onDelete?: (id: string) => void }) => {
     const {
         setNodeRef,
         attributes,
@@ -150,8 +152,14 @@ const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
                     {priorityIcons[task.priority]}
                     {task.priority}
                 </span>
-                <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800">
-                    <MoreVertical className="w-4 h-4" />
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete?.(task.id);
+                    }}
+                    className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors p-1.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/20 shadow-sm cursor-pointer"
+                >
+                    <Trash2 className="w-4 h-4" />
                 </button>
             </div>
 
@@ -174,7 +182,7 @@ const TaskCard = ({ task, isOverlay }: { task: Task; isOverlay?: boolean }) => {
     );
 };
 
-const KanbanColumn = ({ column, tasks, onAddTask }: { column: Column; tasks: Task[]; onAddTask: (columnId: string) => void }) => {
+const KanbanColumn = ({ column, tasks, onAddTask, onDeleteTask }: { column: Column; tasks: Task[]; onAddTask: (columnId: string) => void; onDeleteTask: (id: string) => void }) => {
     const { setNodeRef } = useSortable({
         id: column.id,
         data: {
@@ -216,7 +224,7 @@ const KanbanColumn = ({ column, tasks, onAddTask }: { column: Column; tasks: Tas
                 <SortableContext items={tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                     {tasks.length > 0 ? (
                         tasks.map(task => (
-                            <TaskCard key={task.id} task={task} />
+                            <TaskCard key={task.id} task={task} onDelete={onDeleteTask} />
                         ))
                     ) : (
                         <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-slate-200/50 dark:border-slate-800/30 rounded-3xl bg-slate-50/30 dark:bg-slate-900/10 group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-900/20 transition-all" onClick={() => onAddTask(column.id)}>
@@ -234,10 +242,12 @@ const KanbanColumn = ({ column, tasks, onAddTask }: { column: Column; tasks: Tas
 
 export default function TaskManagement() {
     const [tasks, setTasks] = useState<Task[]>([]);
-    const [selectedDepartment, setSelectedDepartment] = useState(DEPARTMENTS[0]);
+    const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+    const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | number | null>(null);
     const [activeTask, setActiveTask] = useState<Task | null>(null);
     const [originalColumnId, setOriginalColumnId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isWorkspacesLoading, setIsWorkspacesLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     // New Task Form State
@@ -260,14 +270,41 @@ export default function TaskManagement() {
         })
     );
 
-    const fetchTasks = async (dept: string) => {
+    const searchParams = useSearchParams();
+    const workspaceIdParam = searchParams.get('workspaceId');
+
+    const fetchWorkspaces = async () => {
+        setIsWorkspacesLoading(true);
+        try {
+            const { data, error } = await supabase
+                .from('Workspace')
+                .select('id, project, color, iconColor');
+
+            if (error) throw error;
+            setWorkspaces(data || []);
+
+            // Priority: URL Param > First Workspace
+            if (workspaceIdParam) {
+                setSelectedWorkspaceId(workspaceIdParam);
+            } else if (data && data.length > 0) {
+                setSelectedWorkspaceId(data[0].id);
+            }
+        } catch (error: any) {
+            console.error('Error fetching workspaces:', error.message);
+            toast.error("Failed to load workspaces");
+        } finally {
+            setIsWorkspacesLoading(false);
+        }
+    };
+
+    const fetchTasks = async (workspaceId: string | number) => {
         setIsLoading(true);
-        console.log(`Fetching tasks for department: ${dept}`);
+        console.log(`Fetching tasks for workspaceId: ${workspaceId}`);
         try {
             const { data, error } = await supabase
                 .from('Task')
                 .select('*')
-                .eq('department', dept);
+                .eq('workspaceId', workspaceId);
 
             if (error) throw error;
             console.log(`Fetched ${data?.length || 0} tasks`);
@@ -281,8 +318,14 @@ export default function TaskManagement() {
     };
 
     useEffect(() => {
-        fetchTasks(selectedDepartment);
-    }, [selectedDepartment]);
+        fetchWorkspaces();
+    }, []);
+
+    useEffect(() => {
+        if (selectedWorkspaceId) {
+            fetchTasks(selectedWorkspaceId);
+        }
+    }, [selectedWorkspaceId]);
 
     const handleCreateTask = async () => {
         if (!newTask.title) {
@@ -293,23 +336,17 @@ export default function TaskManagement() {
         try {
             const taskToCreate = {
                 ...newTask,
-                department: selectedDepartment,
+                workspaceId: selectedWorkspaceId,
             };
-
-            console.log(`Creating new task in department: "${selectedDepartment}"`, taskToCreate);
 
             const { data, error } = await supabase
                 .from('Task')
                 .insert([taskToCreate])
                 .select();
 
-            if (error) {
-                console.error("Supabase Insert Error Details:", error);
-                throw error;
-            }
+            if (error) throw error;
 
             if (data) {
-                console.log("Task successfully inserted into Supabase:", data[0]);
                 setTasks(prev => [...prev, data[0]]);
                 setIsCreateModalOpen(false);
                 setNewTask({
@@ -319,11 +356,29 @@ export default function TaskManagement() {
                     dueDate: new Date().toISOString().split('T')[0],
                     columnId: 'todo'
                 });
-                toast.success(`Task added to ${selectedDepartment}`);
+                toast.success("Task created successfully");
             }
         } catch (error: any) {
-            console.error('Final Creation Error:', error.message);
-            toast.error(`Creation failed: ${error.message}`);
+            console.error('Error creating task:', error.message);
+            toast.error("Failed to create task");
+        }
+    };
+
+    const handleDeleteTask = async (taskId: string) => {
+        try {
+            console.log(`Deleting task: ${taskId}`);
+            const { error } = await supabase
+                .from('Task')
+                .delete()
+                .eq('id', taskId);
+
+            if (error) throw error;
+
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            toast.success("Task deleted successfully");
+        } catch (error: any) {
+            console.error('Error deleting task:', error.message);
+            toast.error("Failed to delete task");
         }
     };
 
@@ -478,35 +533,47 @@ export default function TaskManagement() {
                     onClick={() => setIsCreateModalOpen(true)}
                     className="flex items-center gap-2.5 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-black text-sm transition-all shadow-xl shadow-blue-500/20 active:scale-95 group relative overflow-hidden"
                 >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
+                    <div className="absolute inset-0 bg-linear-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] pointer-events-none" />
                     <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
                     Create Task
                 </button>
             </div>
 
-            {/* Department Selection Bar - Premium Tabs */}
+            {/* Workspace Selection Bar - Premium Tabs */}
             <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 scrollbar-hide shrink-0 px-2">
-                {DEPARTMENTS.map((dept) => (
-                    <button
-                        key={dept}
-                        onClick={() => setSelectedDepartment(dept)}
-                        className={cn(
-                            "group relative px-6 py-3 rounded-2xl text-[13px] font-black transition-all whitespace-nowrap overflow-hidden transform-gpu",
-                            selectedDepartment === dept
-                                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_rgba(255,255,255,0.05)] scale-105"
-                                : "bg-white dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800/60 hover:border-slate-400 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:-translate-y-1"
-                        )}
-                    >
-                        <span className="relative z-10 flex items-center gap-2">
-                            {dept}
-                            {selectedDepartment === dept && (
-                                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-[9px] font-bold">
-                                    {tasks.length}
-                                </span>
+                {isWorkspacesLoading ? (
+                    <div className="flex gap-2">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="h-12 w-32 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-2xl" />
+                        ))}
+                    </div>
+                ) : workspaces.length > 0 ? (
+                    workspaces.map((workspace) => (
+                        <button
+                            key={workspace.id}
+                            onClick={() => setSelectedWorkspaceId(workspace.id)}
+                            className={cn(
+                                "group relative px-6 py-3 rounded-2xl text-[13px] font-black transition-all whitespace-nowrap overflow-hidden transform-gpu",
+                                selectedWorkspaceId === workspace.id
+                                    ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-[0_20px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_40px_rgba(255,255,255,0.05)] scale-105"
+                                    : "bg-white dark:bg-slate-950/40 text-slate-500 dark:text-slate-400 border border-slate-200/60 dark:border-slate-800/60 hover:border-slate-400 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white hover:-translate-y-1"
                             )}
-                        </span>
-                    </button>
-                ))}
+                        >
+                            <span className="relative z-10 flex items-center gap-2">
+                                {workspace.project}
+                                {selectedWorkspaceId === workspace.id && (
+                                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500 text-white text-[9px] font-bold">
+                                        {tasks.length}
+                                    </span>
+                                )}
+                            </span>
+                        </button>
+                    ))
+                ) : (
+                    <div className="flex items-center gap-4 py-2 px-4 bg-slate-50 dark:bg-slate-900/40 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                        <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">No workspaces found. Create one in the Workspaces tab.</p>
+                    </div>
+                )}
             </div>
 
             {/* Kanban Board with Drag and Drop */}
@@ -528,6 +595,7 @@ export default function TaskManagement() {
                                     setNewTask(prev => ({ ...prev, columnId }));
                                     setIsCreateModalOpen(true);
                                 }}
+                                onDeleteTask={handleDeleteTask}
                             />
                         ))}
                     </div>
@@ -544,7 +612,7 @@ export default function TaskManagement() {
                         }}
                     >
                         {activeTask ? (
-                            <TaskCard task={activeTask} isOverlay />
+                            <TaskCard task={activeTask} isOverlay onDelete={handleDeleteTask} />
                         ) : null}
                     </DragOverlay>
                 </DndContext>

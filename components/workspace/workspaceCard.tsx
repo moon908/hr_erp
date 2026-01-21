@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase/client"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { useRouter } from "next/navigation"
 
 interface WorkspaceItem {
     id: number | string;
@@ -24,6 +25,7 @@ interface WorkspaceCardProps {
 }
 
 const WorkspaceCard = ({ onAddClick }: WorkspaceCardProps) => {
+    const router = useRouter();
     const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -120,7 +122,12 @@ const WorkspaceCard = ({ onAddClick }: WorkspaceCardProps) => {
                             >
                                 {workspace.status ? "Active" : "Inactive"}
                             </Badge>
-                            <Button variant="ghost" size="sm" className="group/btn text-xs font-bold gap-1 hover:bg-primary/10 hover:text-primary transition-all">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="group/btn text-xs font-bold gap-1 hover:bg-primary/10 hover:text-primary transition-all"
+                                onClick={() => router.push(`/taskManagement?workspaceId=${workspace.id}`)}
+                            >
                                 View Task <ChevronRight className="size-3.5 transition-transform group-hover/btn:translate-x-1" />
                             </Button>
                         </div>
