@@ -1,4 +1,3 @@
-import { ChartAreaInteractive } from "@/components/dashboard/chart-area-interactive"
 import { SectionCards } from "@/components/dashboard/section-cards"
 import { MyPieChart } from "@/components/charts/MyPieChart"
 import { MyBarChart } from "@/components/charts/MyBarChart"
