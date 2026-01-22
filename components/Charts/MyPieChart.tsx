@@ -3,6 +3,7 @@
 import * as React from "react"
 import { IconTrendingUp } from "@tabler/icons-react"
 import { Label, Pie, PieChart } from "recharts"
+import { supabase } from "@/lib/supabase/client"
 
 import {
     Card,
@@ -19,46 +20,64 @@ import {
     type ChartConfig,
 } from "@/components/ui/chart"
 
-export const description = "A donut chart with text"
-
-const chartData = [
-    { department: "engineering", employees: 275, fill: "var(--color-engineering)" },
-    { department: "hr", employees: 200, fill: "var(--color-hr)" },
-    { department: "sales", employees: 287, fill: "var(--color-sales)" },
-    { department: "marketing", employees: 173, fill: "var(--color-marketing)" },
-    { department: "finance", employees: 190, fill: "var(--color-finance)" },
-]
+export const description = "Workspace Status Distribution"
 
 const chartConfig = {
-    employees: {
-        label: "Employees",
+    workspaces: {
+        label: "Workspaces",
     },
-    engineering: {
-        label: "Engineering",
+    active: {
+        label: "Active",
         color: "var(--chart-1)",
     },
-    hr: {
-        label: "HR",
+    inactive: {
+        label: "Inactive",
         color: "var(--chart-2)",
-    },
-    sales: {
-        label: "Sales",
-        color: "var(--chart-3)",
-    },
-    marketing: {
-        label: "Marketing",
-        color: "var(--chart-4)",
-    },
-    finance: {
-        label: "Finance",
-        color: "var(--chart-5)",
     },
 } satisfies ChartConfig
 
 export function MyPieChart() {
-    const totalEmployees = React.useMemo(() => {
-        return chartData.reduce((acc, curr) => acc + curr.employees, 0)
-    }, [])
+    const [chartData, setChartData] = React.useState<any[]>([
+        { status: "active", count: 0, fill: "var(--color-active)" },
+        { status: "inactive", count: 0, fill: "var(--color-inactive)" },
+    ]);
+    const [isLoading, setIsLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        const fetchWorkspaceStatus = async () => {
+            try {
+                setIsLoading(true);
+                const { data, error } = await supabase
+                    .from('Workspace')
+                    .select('status');
+
+                if (error) throw error;
+
+                const counts = (data || []).reduce((acc: any, ws: any) => {
+                    const key = ws.status ? 'active' : 'inactive';
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, { active: 0, inactive: 0 });
+
+                const updatedData = [
+                    { status: "active", count: counts.active, fill: "var(--color-active)" },
+                    { status: "inactive", count: counts.inactive, fill: "var(--color-inactive)" },
+                ];
+
+                setChartData(updatedData);
+            } catch (error) {
+                console.error('Error fetching workspace status:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchWorkspaceStatus();
+    }, []);
+
+    const totalWorkspaces = React.useMemo(() => {
+        return chartData.reduce((acc, curr) => acc + curr.count, 0)
+    }, [chartData])
 
     return (
         <Card className="flex flex-col h-full border-none shadow-2xl bg-linear-to-br from-card/80 to-card/30 backdrop-blur-xl relative overflow-hidden">
@@ -67,9 +86,9 @@ export function MyPieChart() {
 
             <CardHeader className="items-center pb-0 relative z-10">
                 <CardTitle className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-foreground to-foreground/70">
-                    Distribution
+                    Workspace Status
                 </CardTitle>
-                <CardDescription className="font-semibold text-primary/80 uppercase tracking-tighter text-[10px]">Department Headcount</CardDescription>
+                <CardDescription className="font-semibold text-primary/80 uppercase tracking-tighter text-[10px]">Operational Health</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 pb-0 relative z-10">
                 <ChartContainer
@@ -83,8 +102,8 @@ export function MyPieChart() {
                         />
                         <Pie
                             data={chartData}
-                            dataKey="employees"
-                            nameKey="department"
+                            dataKey="count"
+                            nameKey="status"
                             innerRadius={75}
                             outerRadius={95}
                             paddingAngle={4}
@@ -105,14 +124,14 @@ export function MyPieChart() {
                                                     y={viewBox.cy}
                                                     className="fill-foreground text-4xl font-black tracking-tight"
                                                 >
-                                                    {totalEmployees.toLocaleString()}
+                                                    {isLoading ? "..." : totalWorkspaces.toLocaleString()}
                                                 </tspan>
                                                 <tspan
                                                     x={viewBox.cx}
                                                     y={(viewBox.cy || 0) + 24}
                                                     className="fill-muted-foreground text-[10px] font-bold uppercase tracking-widest opacity-80"
                                                 >
-                                                    Total Staff
+                                                    Total Workspaces
                                                 </tspan>
                                             </text>
                                         )
@@ -126,17 +145,17 @@ export function MyPieChart() {
                 {/* Custom Legend */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 pb-6 px-4">
                     {chartData.map((item) => (
-                        <div key={item.department} className="flex items-center gap-2 group transition-all">
+                        <div key={item.status} className="flex items-center gap-2 group transition-all">
                             <div
                                 className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm transition-transform group-hover:scale-125"
-                                style={{ backgroundColor: (chartConfig as any)[item.department].color }}
+                                style={{ backgroundColor: (chartConfig as any)[item.status]?.color }}
                             />
                             <div className="flex flex-col">
                                 <span className="text-[10px] font-bold text-muted-foreground capitalize leading-none">
-                                    {item.department}
+                                    {(chartConfig as any)[item.status]?.label}
                                 </span>
                                 <span className="text-xs font-black text-foreground/90 tabular-nums">
-                                    {item.employees}
+                                    {isLoading ? "..." : item.count}
                                 </span>
                             </div>
                         </div>
@@ -145,10 +164,10 @@ export function MyPieChart() {
             </CardContent>
             <CardFooter className="flex-col gap-1 text-sm pt-4 border-t border-border/10 relative z-10 bg-black/5 dark:bg-white/5">
                 <div className="flex items-center gap-2 leading-none font-bold text-foreground/80">
-                    Growth of +8% <IconTrendingUp className="size-4 text-emerald-500" />
+                    Live Sync <IconTrendingUp className="size-4 text-emerald-500" />
                 </div>
                 <div className="text-[10px] text-muted-foreground/60 font-medium">
-                    Automated report sync: Just now
+                    Automated report sync
                 </div>
             </CardFooter>
         </Card>

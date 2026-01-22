@@ -36,9 +36,9 @@ import { supabase } from "@/lib/supabase/client"
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "userxyz",
+    email: "userxyz@gmail.com",
+    avatar: "/profile.jpeg",
   },
   navMain: [
     {

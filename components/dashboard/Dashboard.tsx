@@ -1,8 +1,8 @@
 import { ChartAreaInteractive } from "@/components/dashboard/chart-area-interactive"
-import { DataTable } from "@/components/dashboard/data-table"
 import { SectionCards } from "@/components/dashboard/section-cards"
 import { MyPieChart } from "@/components/charts/MyPieChart"
-import data from "./data.json"
+import { MyBarChart } from "@/components/charts/MyBarChart"
+import { MemberList } from "@/components/dashboard/member-list"
 
 export default function Page() {
     return (
@@ -12,17 +12,16 @@ export default function Page() {
                     {/* Left Column */}
                     <div className="flex flex-1 flex-col gap-4 md:gap-6">
                         <SectionCards />
-                        <ChartAreaInteractive />
+                        <MemberList />
                     </div>
 
                     {/* Right Column */}
-                    <div className="flex-none w-full lg:w-[400px]">
+                    <div className="flex-none w-full lg:w-[400px] flex flex-col gap-4 md:gap-6">
                         <MyPieChart />
+                        <MyBarChart />
                     </div>
                 </div>
-                <div className="px-4 lg:px-6">
-                    <DataTable data={data} />
-                </div>
+
             </div>
         </div>
     )

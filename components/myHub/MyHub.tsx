@@ -20,11 +20,12 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { WORKSPACES } from '@/constants/constants';
+import { WORKSPACES as MOCK_WORKSPACES } from '@/constants/constants';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from '@/lib/supabase/client';
 
 interface Message {
     id: string;
@@ -54,7 +55,19 @@ const INITIAL_MESSAGES: Record<string, Message[]> = {
     ]
 };
 
-const CHAT_ROOMS: ChatRoom[] = [
+// Local types for Supabase data
+interface DBWorkspace {
+    id: string | number;
+    project: string;
+}
+
+interface DBChatCategory {
+    id: string | number;
+    category: string;
+    workspaceId: string | number;
+}
+
+const MOCK_CHAT_ROOMS: ChatRoom[] = [
     { id: 'eng-general', name: 'general', workspaceId: 'engineering', description: 'Engineering team announcements', membersCount: 15 },
     { id: 'eng-dev', name: 'dev-chat', workspaceId: 'engineering', description: 'Code discussions and PRs', membersCount: 12 },
     { id: 'mkt-social', name: 'social-media', workspaceId: 'marketing', description: 'Scheduling and content review', membersCount: 8 },
@@ -71,13 +84,64 @@ const MOCK_MEMBERS = [
 ];
 
 const MyHub = () => {
-    const [selectedRoomId, setSelectedRoomId] = useState('eng-general');
+    const [selectedRoomId, setSelectedRoomId] = useState<string | number>('eng-general');
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<Record<string, Message[]>>(INITIAL_MESSAGES);
+    const [workspaces, setWorkspaces] = useState<DBWorkspace[]>([]);
+    const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const selectedRoom = CHAT_ROOMS.find(r => r.id === selectedRoomId) || CHAT_ROOMS[0];
-    const currentMessages = messages[selectedRoomId] || [];
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setIsLoading(true);
+                // Fetch Workspaces
+                const { data: wsData, error: wsError } = await supabase
+                    .from('Workspace')
+                    .select('id, project');
+
+                if (wsError) throw wsError;
+
+                // Fetch ChatCategories
+                const { data: catData, error: catError } = await supabase
+                    .from('ChatCategory')
+                    .select('id, category, workspaceId');
+
+                if (catError) throw catError;
+
+                if (wsData && catData) {
+                    setWorkspaces(wsData);
+
+                    const rooms: ChatRoom[] = catData.map(cat => ({
+                        id: cat.id,
+                        name: cat.category,
+                        workspaceId: cat.workspaceId,
+                        description: `Discussion for ${cat.category}`,
+                        membersCount: Math.floor(Math.random() * 20) + 5 // Mock members count for now
+                    }));
+
+                    setChatRooms(rooms);
+
+                    if (rooms.length > 0) {
+                        setSelectedRoomId(rooms[0].id);
+                    }
+                }
+            } catch (error: any) {
+                console.error('Error fetching data from Supabase:', error.message);
+                // Fallback to mock data
+                setWorkspaces(MOCK_WORKSPACES.map(ws => ({ id: ws.id, project: ws.name })));
+                setChatRooms(MOCK_CHAT_ROOMS);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const selectedRoom = chatRooms.find(r => r.id === selectedRoomId) || chatRooms[0] || MOCK_CHAT_ROOMS[0];
+    const currentMessages = messages[selectedRoomId.toString()] || [];
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -243,56 +307,66 @@ const MyHub = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-8 scrollbar-hide">
-                    {WORKSPACES.map(workspace => {
-                        const rooms = CHAT_ROOMS.filter(r => r.workspaceId === workspace.id);
-                        if (rooms.length === 0) return null;
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-10">
+                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        </div>
+                    ) : workspaces.length > 0 ? (
+                        workspaces.map(workspace => {
+                            const rooms = chatRooms.filter(r => String(r.workspaceId) === String(workspace.id));
+                            if (rooms.length === 0) return null;
 
-                        return (
-                            <div key={workspace.id} className="space-y-3">
-                                <div className="flex items-center justify-between px-3 group">
-                                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 group-hover:text-blue-500 transition-colors">
-                                        {workspace.name}
-                                    </span>
-                                    <Plus className="w-4 h-4 text-slate-300 transition-all hover:text-blue-500 cursor-pointer" />
+                            return (
+                                <div key={workspace.id} className="space-y-3">
+                                    <div className="flex items-center justify-between px-3 group">
+                                        <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-600 group-hover:text-blue-500 transition-colors">
+                                            {workspace.project}
+                                        </span>
+                                        <Plus className="w-4 h-4 text-slate-300 transition-all hover:text-blue-500 cursor-pointer" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        {rooms.map(room => (
+                                            <button
+                                                key={room.id}
+                                                onClick={() => setSelectedRoomId(room.id)}
+                                                className={cn(
+                                                    "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group text-left",
+                                                    selectedRoomId === room.id
+                                                        ? "bg-blue-500/10 text-blue-600"
+                                                        : "hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"
+                                                )}
+                                            >
+                                                <div className={cn(
+                                                    "p-1.5 rounded-lg transition-colors",
+                                                    selectedRoomId === room.id ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                                                )}>
+                                                    <Hash className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div className="flex-1 truncate">
+                                                    <p className="text-sm font-bold tracking-tight truncate">
+                                                        {room.name}
+                                                    </p>
+                                                    <p className="text-[10px] font-medium opacity-60">
+                                                        {room.membersCount} online
+                                                    </p>
+                                                </div>
+                                                {selectedRoomId === room.id && (
+                                                    <motion.div
+                                                        layoutId="active-pill"
+                                                        className="w-1 h-6 bg-blue-600 rounded-full"
+                                                    />
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
-                                <div className="space-y-1">
-                                    {rooms.map(room => (
-                                        <button
-                                            key={room.id}
-                                            onClick={() => setSelectedRoomId(room.id)}
-                                            className={cn(
-                                                "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group text-left",
-                                                selectedRoomId === room.id
-                                                    ? "bg-blue-500/10 text-blue-600"
-                                                    : "hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-600 dark:text-slate-400"
-                                            )}
-                                        >
-                                            <div className={cn(
-                                                "p-1.5 rounded-lg transition-colors",
-                                                selectedRoomId === room.id ? "bg-blue-600 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
-                                            )}>
-                                                <Hash className="w-3.5 h-3.5" />
-                                            </div>
-                                            <div className="flex-1 truncate">
-                                                <p className="text-sm font-bold tracking-tight truncate">
-                                                    {room.name}
-                                                </p>
-                                                <p className="text-[10px] font-medium opacity-60">
-                                                    {room.membersCount} online
-                                                </p>
-                                            </div>
-                                            {selectedRoomId === room.id && (
-                                                <motion.div
-                                                    layoutId="active-pill"
-                                                    className="w-1 h-6 bg-blue-600 rounded-full"
-                                                />
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })
+                    ) : (
+                        <div className="text-center py-10">
+                            <p className="text-sm text-slate-500">No rooms found</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer Section in Sidebar */}

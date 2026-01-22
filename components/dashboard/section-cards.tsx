@@ -1,37 +1,81 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
 import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
 import { MdOutlinePending } from "react-icons/md"
 import { AiOutlineIssuesClose } from "react-icons/ai"
 import { TiTick } from "react-icons/ti"
 import {
   Card,
-  CardAction,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 
 export function SectionCards() {
+  const [completedCount, setCompletedCount] = useState<number | string>("...");
+  const [pendingCount, setPendingCount] = useState<number | string>("...");
+  const [totalCount, setTotalCount] = useState<number | string>("...");
+
+  useEffect(() => {
+    async function fetchTaskStats() {
+      try {
+        // Fetch Completed Tasks
+        const { count: completed, error: completedError } = await supabase
+          .from('Task')
+          .select('*', { count: 'exact', head: true })
+          .eq('columnId', 'done');
+
+        if (completedError) throw completedError;
+        setCompletedCount(completed || 0);
+
+        // Fetch Pending Tasks (not in 'done' column)
+        const { count: pending, error: pendingError } = await supabase
+          .from('Task')
+          .select('*', { count: 'exact', head: true })
+          .neq('columnId', 'done');
+
+        if (pendingError) throw pendingError;
+        setPendingCount(pending || 0);
+
+        // Fetch Total Projects
+        const { count: total, error: totalError } = await supabase
+          .from('Workspace')
+          .select('*', { count: 'exact', head: true });
+
+        if (totalError) throw totalError;
+        setTotalCount(total || 0);
+      } catch (error) {
+        console.error('Error fetching task stats:', error);
+        setCompletedCount(0);
+        setPendingCount(0);
+        setTotalCount(0);
+      }
+    }
+
+    fetchTaskStats();
+  }, []);
   const cards = [
     {
-      title: "Projects Completed",
-      value: "$1,250.00",
+      title: "Task Completed",
+      value: completedCount.toString(),
       trend: "Trending up",
       trendIcon: <TiTick />,
       description: "Updated 5m ago",
       color: "from-emerald-500/10"
     },
     {
-      title: "Projects Pending",
-      value: "1,234",
+      title: "Task Pending",
+      value: pendingCount.toString(),
       trend: "Down 20%",
       trendIcon: <MdOutlinePending />,
       description: "Last 30 days",
       color: "from-blue-500/10"
     },
     {
-      title: "Number of Issues",
-      value: "45,678",
+      title: "Total Projects",
+      value: totalCount.toString(),
       trend: "High retention",
       trendIcon: <AiOutlineIssuesClose />,
       description: "Across platforms",
